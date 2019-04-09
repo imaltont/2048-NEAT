@@ -32,10 +32,21 @@ node_gene = {current_value = 0,
 
 --> Class for the genotype of an individual
 genotype = {nodes = {}, connections = {},
-			new = function(self, o)
-				o = o or {}
+			new = function(self, nin, nout, init_func, ...)
+				o = {}
 				setmetatable(o, self)
 				self.__index = self
+            for i = 1, nin do
+               o.nodes[i] = node_gene:new(i, 1)
+            end
+            for i = 1, nout do
+               o.nodes[i+nin] = node_gene:new(i+nin, 2)
+            end
+            for i = 1, nin do
+               for j = 1, nout do
+                  o.connections[i+j] = connect_gene:new(i, j, init_func(...), true, i+j)
+               end
+            end
 				return o
 			end
 }
@@ -45,10 +56,11 @@ phenotype = {}
 
 --> Class for the individual
 individual = {geno = {}, pheno = {}, fitness = 0,
-			new = function(self, o, nin, nout)
+			new = function(self, o, nin, nout, init_func, ...)
 				o = o or {}
 				setmetatable(o, self)
 				self.__index = self
+            o.geno[1] = genotype:new(nin, nout, init_func, ...)
 				return o
 			end
 }
@@ -62,9 +74,9 @@ population = {inds = {},
 				self.__index = self
 				return o
 			end,
-			init = function(self, pop, nin, nout)
+			init = function(self, pop, nin, nout, init_func, ...)
 				for n in pop do
-					self.inds[n] = individual:new({}, nin, nout)
+					self.inds[n] = individual:new({}, nin, nout, init_func, ...)
 				end
 			end
 }
