@@ -59,7 +59,7 @@ genotype = {nodes = {}, connections = {},
                     print(self.connections[i].inn, self.connections[i].out, inn, out)
                     if self.connections[i].inn == inn and self.connections[i].out == out then return false end
                 end
-                self.connections[#self.connections+1] = connect_gene:new(inn, out, weight_func(...), true, innovation)
+                self.connections[#self.connections+1] = connect_gene:new(inn, out, weight_func(...), true, innovation+1)
                 return true
             end,
             add_node = function(self, connection, innovation, weight_func, ...)
@@ -81,12 +81,78 @@ genotype = {nodes = {}, connections = {},
 }
 
 --> Class for the phenotype of an individual
-phenotype = {forward_connections = {}, recurrent_connections = {}, 
+phenotype = {in_cons = {},  
         new = function(self)
             o = {}
             setmetatable(o, self)
             self.__index = self
             return o
+        end,
+        init = function(self, nodes, connections)
+            local nodes = {table.unpack(nodes)}
+            local connections = {table.unpack(connections)}
+            local all_cons = {}
+            in_cons = {}
+            for i = 1, #nodes do
+                self.in_cons[nodes[i].id] = {node=nodes[i], forward_connections={}, recurrent_connections = {}, requires={}, current_value = 0, previous_value = 0}
+            end
+            for i = 1, #connections do
+                if connections[i].enabled == true then
+                    if not self:creates_cycle(all_cons, connections[i]) then 
+                        self.in_cons[connections[i].out].forward_connections[#self.in_cons[connections[i].out].forward_connections + 1] = connections[i]
+                        self.in_cons[connections[i].out].requires[1 + #self.in_cons[connections[i].out].requires] = connections[i].inn
+                        self.in_cons[connections[i].out].requires[1 + #self.in_cons[connections[i].out].requires] = connections[i].weight
+                    else
+                        self.in_cons[connections[i].out].recurrent_connections[#self.in_cons[connections[i].out].recurrent_connections + 1] = connections[i]
+                    end
+                    all_cons[#all_cons+1] = connections[i]
+                end
+            end
+
+        end,
+        inference = function(self, input)
+            visited = {}
+            output_nodes = {}
+            for i = 1, #self.in_cons do
+                if self.in_cons[i].node.ntype == 1 then
+                    self.in_cons[i].current_value = input[i]
+                elseif self.in_cons[i].node.ntype == 2 then
+                    output_nodes[#output_nodes+1] = self.in_cons[i].node.id
+                end
+                if next(self.in_cons[i].requires) == nil then
+                    visited[i] = true
+                end
+                for j = 1, #self.in_cons[i].recurrent_connections do
+                    self.in_cons[i].current_value = self.in_cons[i].current_value + self.in_cons[self.in_cons[i].recurrent_connections[j].inn].previous_value
+                end
+            end
+
+            for i = 1, #output_nodes do
+                self:single_inference(output_nodes[i], visited)
+            end
+
+            outputs = {}
+            for i = 1, #self.in_cons do
+                if self.in_cons[i].node.ntype == 2 then
+                    outputs[#outputs+1] = self.in_cons[i].current_value
+                end
+                self.in_cons[i].previous_value = self.in_cons[i].current_value
+                self.in_cons[i].current_value = 0
+            end
+            return table.unpack(outputs)
+
+        end,
+        single_inference = function(self, node, visited)
+            for i = 1, #self.in_cons[node].requires, 2 do
+                if visited[self.in_cons[node].requires[i]] then
+                    self.in_cons[node].current_value = self.in_cons[node].current_value + self.in_cons[node].requires[i+1] * self.in_cons[self.in_cons[node].requires[i]].current_value
+                else
+                    self:single_inference(self.in_cons[node].requires[i], visited)
+                    self.in_cons[node].current_value = self.in_cons[node].current_value + self.in_cons[node].requires[i+1] * self.in_cons[self.in_cons[node].requires[i]].current_value
+                end
+            end
+            print(node, self.in_cons[node].current_value)
+            visited[node] = true
         end,
         creates_cycle = function (self, connections, con)
             if con.inn == con.out then return true end
@@ -119,6 +185,7 @@ individual = {geno = {}, pheno = {}, fitness = 0,
             o.geno = genotype:new()
             o.geno:init(nin, nout, init_func, ...)
             o.pheno = phenotype:new()
+            o.pheno:init(o.geno.nodes, o.geno.connections)
             return o
             end
 }
