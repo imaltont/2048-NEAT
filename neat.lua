@@ -109,8 +109,8 @@ phenotype = {
             return o
         end,
         init = function(self, nodes, connections)
-            local nodes = {table.unpack(nodes)}
-            local connections = {table.unpack(connections)}
+            local nodes = nodes
+            local connections = connections
             local all_cons = {}
             self.in_cons = {}
             for i = 1, #nodes do
@@ -158,7 +158,7 @@ phenotype = {
                 self.in_cons[k].previous_value = self.in_cons[k].current_value
                 self.in_cons[k].current_value = 0
             end
-            return table.unpack(outputs)
+            return outputs
 
         end,
         single_inference = function(self, node, visited)
@@ -308,7 +308,7 @@ function main_loop(generations, pop_size, crossover_rate, enabled_mutation_rate,
             temp_pop[#temp_pop].pheno:init(temp_pop[#temp_pop].geno.nodes, temp_pop[#temp_pop].geno.connections)
             local n
             if temp_species[k].num_inds == 1 then n = 1
-            else n = temp_species[k].num_inds//2
+            else n = math.floor(temp_species[k].num_inds/2)
             end
             for j = 1, n do
                 reproduction_population[#reproduction_population+1] = {ind = temp_species[k].inds[j], fitness = temp_species[k].inds[j].fitness / temp_species[k].num_inds}
@@ -553,7 +553,7 @@ function fitness(ind)
     local b = generate_board()
     local step = 1
     while has_moves(b) do
-        outputs = {ind.pheno:inference(flatten(b))}
+        outputs = ind.pheno:inference(flatten(b))
         local action = -1
         local failed = {}
         local has_moved = false
@@ -619,7 +619,7 @@ function play(ind)
         ind.pheno.in_cons[k].current_value = 0
     end
     while has_moves(b) do
-        local outputs = {ind.pheno:inference(flatten(b))}
+        local outputs = ind.pheno:inference(flatten(b))
         local action = -1
         local failed = {}
         while not move_tiles(action, b) and #failed ~= 4 do
