@@ -165,7 +165,7 @@ function flatten(board)
     max_board(board)
     for i = 1, 4 do
         for j = 1, 4 do
-            flat[#flat+1] = board[1][i][j] / board.max
+            flat[#flat+1] = board[1][i][j] / 11 -- board.max
         end
     end
     return flat
