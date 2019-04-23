@@ -551,7 +551,8 @@ function fitness(ind)
     for x = 1, boards do
     local outputs = {}
     local b = generate_board()
-    for step = 1, total_steps do
+    local step = 1
+    while has_moves(b) do
         outputs = {ind.pheno:inference(flatten(b))}
         local action = -1
         local failed = {}
@@ -572,11 +573,12 @@ function fitness(ind)
                 end
             end
             if not move_tiles(action, b) then
-                total_fitness = total_fitness - (100*(total_steps-step))
+            --    total_fitness = total_fitness - (1*(total_steps-step))
             else
                 has_moved = true
             end
         end
+        step = step + 1
 
     end
     --for i = 1, 4 do
@@ -609,14 +611,14 @@ function copy_individual(ind)
     end
     return new_ind
 end
-function play(ind, steps)
+function play(ind)
     local b = generate_board()
     print_board(b)
     for k, v in pairs(ind.pheno.in_cons) do
         ind.pheno.in_cons[k].previous_value = 0
         ind.pheno.in_cons[k].current_value = 0
     end
-    for i = 1, steps do
+    while has_moves(b) do
         local outputs = {ind.pheno:inference(flatten(b))}
         local action = -1
         local failed = {}
@@ -641,11 +643,11 @@ function play(ind, steps)
     max_board(b)
     print_board(b)
 end
-function play_random(steps)
+function play_random()
     local b = generate_board()
     print_board(b)
     local actions = {1, 2, 3, 4}
-    for i = 1, steps do
+    while has_moves(b) do
         move_tiles(actions[math.random(1, #actions)], b)
     end
     max_board(b)

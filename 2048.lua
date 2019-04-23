@@ -165,7 +165,7 @@ function flatten(board)
     max_board(board)
     for i = 1, 4 do
         for j = 1, 4 do
-            flat[#flat+1] = board[1][i][j] / 11 -- board.max
+            flat[#flat+1] = board[1][i][j] / board.max
         end
     end
     return flat
@@ -180,4 +180,24 @@ function count_empty(board)
         end
     end
     return counter
+end
+function has_moves(board)
+    local working_board = generate_board()
+    for i = 1, 4 do
+        for j = 1, 4 do
+            working_board[1][i][j] = board[1][i][j]
+        end
+    end
+    working_board.max = board.max
+    working_board.score = board.score
+    if move_tiles(1, working_board) then
+        return true
+    elseif move_tiles(2, working_board) then
+        return true
+    elseif move_tiles(3, working_board) then
+        return true
+    elseif move_tiles(4, working_board) then
+        return true
+    end
+    return false
 end
